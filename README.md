@@ -29,11 +29,11 @@ Also, to test our code, please ensure the [Datasets](https://github.com/tylerwu2
 * [politicians_ig.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/politicians_ig.csv): Our initial and primary dataset. Scraped from instagram, contains info for each politician like post url, datetime of post, caption, and top comments.
 * [followers.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/followers.csv): Contains daily follower count and change in followers for each politician.
 * [key_dates.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/key_dates.csv): Contains key dates in the Coronavirus timeline and a short excerpt on what happened on each date. Used for labeling in our animated graphs.
-* other datasets in the folder were working datasets used by individual members in their graph creation process.
 
 ### Unused Datasets
 * [trump_tweets.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/trump_tweets.csv): We initially had the idea to scrape twitter data, however, directly scraping Twitter proved to be too difficult with our current skillset and the Twitter API only went back a month in tweets. Therefore, we opted to go with Instagram data instead, but here are the datasets regardless.
 * [tweets_about_trump.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/tweets_about_trump.csv) ^
+* (Note:other datasets in the folder were working datasets used by individual members in their graph creation process.)
 
 ## Authors
 * **Alena Abela** [Alena.abella@gmail.com](mailto:Alena.abella@gmail.com)
