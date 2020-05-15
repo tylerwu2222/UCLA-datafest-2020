@@ -43,7 +43,7 @@ library(av)
 
 # Data cleanup. Echo = FALSE to save space
 
-rawdata_IG <- read.csv("politicians_ig.csv")
+rawdata_IG <- read.csv("Datasets/politicians_ig.csv")
 # glimpse(rawdata_IG)
 
 #Identifier to show where each tweet came from
@@ -212,7 +212,7 @@ Going forward, we'll be looking at how each politician has responded before and 
 
 ```{r keydates}
 # Load dates into R, covert to date type
-keydates <- read.csv("key_dates.csv")
+keydates <- read.csv("Datasets/key_dates.csv")
 keydates$dates <- as.Date(keydates$dates, format = "%m/%d/%Y")
 
 # Remove Unimportant Dates

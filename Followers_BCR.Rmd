@@ -15,9 +15,9 @@ library(av) # rendering mp4
 
 # 1) Read in data
 ```{r,message=FALSE,warning=FALSE}
-all_data <- read_csv('poli_ig_followers.csv')
+all_data <- read_csv('Datasets/poli_ig_followers.csv')
 head(all_data)
-key_dates <- read_csv('key_dates.csv')[2:3]
+key_dates <- read_csv('Datasets/key_dates.csv')[2:3]
 key_dates <- key_dates[c(1,2,4,6,14,17,25),] # only keep very important ones
 key_dates
 ```
