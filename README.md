@@ -15,7 +15,7 @@ Also, to test our code, please ensure the Datasets folder is in the same directo
 * [Captions_Bigrams.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Bigrams.Rmd): used to create the animated bar chart for bigrams and the bigram network (slides 18 to 20)
 * [Afinn_Sentiments.R](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Afinn_Sentiments.R): used to create the afinn sentiment graphs (slides 23 to 25)
 * [Sentiment_Likes.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Sentiment_Likes.Rmd): used to create the scatter plot of sentiment vs engagement (slide 26)
-* [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 27 to 31)
+* [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 27 to 32)
 
 * [Final Graphs.zip](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Final%20Graphs.zip): zip folder containing the final graphs of our presentation
 
