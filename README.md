@@ -6,6 +6,7 @@ To run the RMD's please install the following packages using this line of code:
 ```
 install.pacakges(c('lubridate','zoo','av','gifsky','plotly','tidytext','stopwords','tidyverse','gganimate','hbrthemes','igraph','ggraph'))
 ```
+Also, to test our code, please unsure the Datasets folder is in the same directory as the Rmd files since they make references to the datasets.
 
 ## Files
 * [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 26 to 31)
