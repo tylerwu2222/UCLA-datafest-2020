@@ -30,8 +30,8 @@ Also, to test our code, please ensure the Datasets folder is in the same directo
 * [tweets_about_trump.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/tweets_about_trump.csv) ^
 
 ## Authors
-* **Alena Abela**
-* **Emma Broback**
-* **Linus Jen**
-* **Josh Kong**
+* **Alena Abela** [Alena.abella@gmail.com](mailto:Alena.abella@gmail.com)
+* **Emma Broback** [ebroback@g.ucla.edu](mailto:ebroback@g.ucla.edu)
+* **Linus Jen** [linusscjen@g.ucla.edu](mailto:linusscjen@g.ucla.edu)
+* **Josh Kong** []()
 * **Tyler Wu** [tylerwu2222@g.ucla.edu](mailto:tylerwu2222@g.ucla.edu)
