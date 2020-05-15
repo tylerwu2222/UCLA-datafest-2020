@@ -6,7 +6,7 @@ To run the RMD's please install the following packages using this line of code:
 ```
 install.pacakges(c('lubridate','zoo','av','gifsky','plotly','tidytext','stopwords','tidyverse','gganimate','hbrthemes','igraph','ggraph','wordcloud'))
 ```
-Also, to test our code, please ensure the Datasets folder is in the same directory as the Rmd files since they make references to the datasets.
+Also, to test our code, please ensure the [Datasets](https://github.com/tylerwu2222/UCLA-datafest-2020/tree/master/Datasets) folder is in the same directory as the Rmd files since they make references to the datasets.
 
 ## Files
 
