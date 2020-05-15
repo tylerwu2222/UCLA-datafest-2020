@@ -1,4 +1,4 @@
-# UCLA-datafest-2020:Covid-19 (Con)textualized
+# UCLA-datafest-2020: Covid-19 (Con)textualized
 Our team's project for the UCLA ASA Datafest 2020 Virtual Challenge. We decided to track possible effects of the pandemic on social media trends among select politicians.
 
 ## Prerequisites
@@ -21,6 +21,7 @@ Also, to test our code, please unsure the Datasets folder is in the same directo
 ### Unused Datasets
 * [trump_tweets.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/trump_tweets.csv): We initially had the idea to scrape twitter data, however, directly scraping Twitter proved to difficult with our current skillset and the Twitter API only went back a month in tweets. Therefore, we opted to go with instagram data instead, but here are the datasets regardless.
 * [tweets_about_trump.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/tweets_about_trump.csv) ^
+
 ## Authors
 * **Alena Abela**
 * **Emma Broback**
