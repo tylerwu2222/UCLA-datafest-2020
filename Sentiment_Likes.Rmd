@@ -1,0 +1,115 @@
+---
+title: "Sentiment_Likes"
+author: "Josh Kong"
+date: "5/14/2020"
+output: pdf_document
+---
+
+```{r}
+library(dplyr)
+library(tidytext)
+library(textdata)
+library(tidyr)
+library(ggplot2)
+library(tidyverse)
+```
+
+
+```{r}
+posts <- read_csv("Datasets/politicians_ig.csv")
+followers <- read_csv("Datasets/poli_ig_followers.csv")
+```
+
+
+```{r}
+#used this to make sure names in followers matched with sentiment
+for (i in 1:nrow(followers))
+{
+  if(followers$name[i] == "barackobama")
+  {
+    followers$name[i] <- "Barack Obama"
+  }
+  else if(followers$name[i] == "berniesanders")
+  {
+    followers$name[i] <- "Bernie Sanders"
+  }
+  else if(followers$name[i] == "elizabethwarren")
+  {
+    followers$name[i] <- "Elizabeth Warren"
+  }
+  else if(followers$name[i] == "realdonaldtrump")
+  {
+    followers$name[i] <- "President Donald J. Trump"
+  }
+  else if(followers$name[i] == "sentedcruz")
+  {
+    followers$name[i] <- "Ted Cruz"
+  }
+  else if(followers$name[i] == "joebiden")
+  {
+    followers$name[i] <- "Joe Biden"
+  }
+}
+#used this to make sure the dates matched 
+followers <- followers %>% rename(mdy_time = date)
+followers$mdy_time <- str_replace_all(followers$mdy_time,"April","Apr")
+followers$mdy_time <- str_replace_all(followers$mdy_time,"March","Mar")
+followers$mdy_time <- str_replace_all(followers$mdy_time,"February","Feb")
+followers$mdy_time <- str_replace_all(followers$mdy_time,"January","Jan")
+followers$mdy_time <- str_replace_all(followers$mdy_time,"December","Dec")
+followers$mdy_time <- str_replace_all(followers$mdy_time,"November","Nov")
+```
+
+
+```{r}
+captions <- posts %>% select(caption,post_url,mdy_time,views,likes, name) %>% as_tibble()
+captions <- captions %>% unnest_tokens(word, caption)# unnest captions into individual words
+stop_words_es <- stopwords::stopwords("es", source = "stopwords-iso")
+stop_words_fr <- stopwords::stopwords("fr", source = "stopwords-iso")
+stop_words_en <- stopwords::stopwords("en", source = "stopwords-iso")
+stop_words_latin <- c(stop_words_es,stop_words_fr,stop_words_en)
+stop_words_latin <- data.frame("word" = stop_words_latin, lexicon = 'SMART',stringsAsFactors = F)
+captions <- captions %>% anti_join(stop_words_latin) # remove articles like the, and, a..,
+
+```
+Separated the individuals words in the caption.
+
+```{r}
+#how much likes each post has
+likes <-  posts %>% select(name,likes,post_url) %>% na.omit()
+#sentiment_per_post is how much sentiment each post has
+sentiment_per_post <- captions %>% select(word, mdy_time, name, post_url) %>% inner_join(get_sentiments("afinn"))
+sentiment_per_post <- sentiment_per_post %>%  group_by(post_url,name,mdy_time) %>%  summarise(sentiment =sum(value)) %>% arrange(name)
+
+#sentiment_likes just shows sentiment per post with the number of likes per post
+sentiment_likes <- sentiment_per_post %>%select(name,post_url,sentiment,mdy_time) %>%  inner_join(likes)
+
+```
+Using the get_sentiments() function, I measured the amount of sentiment each of the politician's posts had.
+
+I then combined it with another data to see how much likes and sentiment each post had.
+
+
+```{r}
+ggplot(sentiment_likes, aes(x = sentiment, y = likes)) + geom_point() + labs(title = "Sentiment's Effect on Likes") 
+```
+This is the plot to see the relationship between the sentiment score in a post and the number of likes.
+
+This data may be skewed due to the difference in followers between the politicians. For example, Barack Obama has 27 million followers in Instagram compared to Joe Biden's 2 million followers.
+
+To address the difference in followers, I decided to measure the proportion of followers that liked the post rather than total likes. 
+
+```{r}
+#sentiment_followers shows sentiment per post with the proportion of followers that liked the post
+sentiment_followers <- sentiment_likes %>% left_join(followers, by = c( "mdy_time","name"))
+sentiment_followers <- sentiment_followers %>% mutate(Proportion = likes/followers)
+
+ggplot(sentiment_followers, aes(x = sentiment, y = Proportion)) + geom_point() + labs(title = "Sentiment's Effect on Likes")
+```
+This is the plot that shows the effect that sentiment has on the proportion of likes on a post.
+
+
+
+
+
+
