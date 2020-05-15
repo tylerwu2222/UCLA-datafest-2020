@@ -12,8 +12,9 @@ Also, to test our code, please ensure the Datasets folder is in the same directo
 
 ### Scraping
 * [IGScraper.ipynb](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/IGScraper.ipynb): used to scrape the [politicians_ig.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/politicians_ig.csv) dataset from instagram's desktop website
-* [IGFollowerCountScraper.ipynb](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/IGFollowerCountScraper.ipynb): used to scrape the [followers.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/followers.csv) dataset from [trackalytics.com](https://www.trackalytics.com/), (Note the site seems to be down as of May 15, 2020)\\
-## Visualizations
+* [IGFollowerCountScraper.ipynb](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/IGFollowerCountScraper.ipynb): used to scrape the [followers.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/followers.csv) dataset from [trackalytics.com](https://www.trackalytics.com/), (Note the site seems to be down as of May 15, 2020)
+
+### Visualizations
 * [Follower_Engagement.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Follower_Engagement.Rmd): used to create line charts showing follower engagement (slides 10 to 13)
 * [Followers_BCR.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Followers_BCR.Rmd): used to create the animated bar chart for change in followers (slide 14)
 * [Captions_Comments_BCR.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Comments_BCR.Rmd): used to create the animated bar charts for captions (slides 16 & 17)
