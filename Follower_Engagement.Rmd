@@ -1,0 +1,363 @@
+---
+title: "Data Fest"
+author: "Alena Abella"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+```
+
+Followers Visualization
+```{r}
+followers_ig <- read.csv("Datasets/poli_ig_followers.csv")
+head(followers_ig)
+date_split <- strsplit(as.character(followers_ig$date), " ")
+month <- sapply(date_split,"[",1)
+year <- sapply(date_split,"[",3)
+
+followers_ig <- followers_ig %>% mutate(month=month) %>% mutate(year=year)
+followers_ig_2020 <- followers_ig[which(followers_ig$year=="2020"),]
+
+poli_ig <- read.csv("Datasets/politicians_ig_updated.csv")
+date_split2 <- strsplit(as.character(poli_ig$mdy_time), " ")
+month2 <- sapply(date_split2,"[",1)
+year2 <- sapply(date_split2,"[",3)
+poli_ig <- poli_ig %>% mutate(month=month2) %>% mutate(year=year2)
+poli_ig2020 <- poli_ig[(which(poli_ig$year=="2020")),]
+poli_ig2020$likes <- gsub(",","",poli_ig2020$likes)
+poli_ig2020$likes <- as.numeric(as.character(poli_ig2020$likes))
+```
+Politician Break Down
+```{r}
+barack_ig <- poli_ig2020[which(poli_ig2020$name=="Barack Obama"),]
+trump_ig <- poli_ig2020[which(poli_ig2020$name=="President Donald J. Trump"),]
+bernie_ig <-poli_ig2020[which(poli_ig2020$name=="Bernie Sanders"),]
+warren_ig <- poli_ig2020[which(poli_ig2020$name=="Elizabeth Warren"),]
+biden_ig <- poli_ig2020[which(poli_ig2020$name=="Joe Biden"),]
+cruz_ig <- poli_ig2020[which(poli_ig2020$name=="Ted Cruz"),]
+pence_ig <- poli_ig2020[which(poli_ig2020$name=="Mike Pence"),]
+```
+Barack Obama Followers (Follower Change)
+```{r}
+followers_ig_obama <- followers_ig_2020[which(followers_ig_2020$name=="barackobama"),]
+
+followers_change_obama <- rep(0,5)
+followers_change_obama[1] <- sum(followers_ig_obama$followers_change[which(followers_ig_obama$month == "January")])
+followers_change_obama[2] <- sum(followers_ig_obama$followers_change[which(followers_ig_obama$month == "February")])
+followers_change_obama[3] <- sum(followers_ig_obama$followers_change[which(followers_ig_obama$month == "March")])
+followers_change_obama[4] <- sum(followers_ig_obama$followers_change[which(followers_ig_obama$month == "April")])
+followers_change_obama[5] <- sum(followers_ig_obama$followers_change[which(followers_ig_obama$month == "May")])
+
+followers_change_obama
+
+
+
+fl_obama_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"),levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_obama)))
+fl_obama_df
+
+barack_plot <- ggplot(fl_obama_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Obama's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+barack_plot
+```
+Bernie Followers
+```{r}
+followers_ig_bernie<- followers_ig[which(followers_ig$name=="berniesanders"),]
+bernie_plot <- ggplot(followers_ig_bernie, aes(x=date, y=followers_change)) + geom_point()
+bernie_plot   
+
+#Bernie Followers (Follower Change)
+
+followers_ig_bernie <- followers_ig_2020[which(followers_ig_2020$name=="berniesanders"),]
+
+followers_change_bernie <- rep(0,5)
+followers_change_bernie[1] <- sum(followers_ig_bernie$followers_change[which(followers_ig_bernie$month == "January")])
+followers_change_bernie[2] <- sum(followers_ig_bernie$followers_change[which(followers_ig_bernie$month == "February")])
+followers_change_bernie[3] <- sum(followers_ig_bernie$followers_change[which(followers_ig_bernie$month == "March")])
+followers_change_bernie[4] <- sum(followers_ig_bernie$followers_change[which(followers_ig_bernie$month == "April")])
+followers_change_bernie[5] <- sum(followers_ig_bernie$followers_change[which(followers_ig_bernie$month == "May")])
+
+followers_change_bernie
+
+fl_bernie_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"),levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_bernie)))
+fl_bernie_df
+
+bernie_plot <- ggplot(fl_bernie_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Bernie's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+bernie_plot
+```
+Trump Followers
+```{r}
+followers_ig_trump<- followers_ig[which(followers_ig$name=="realdonaldtrump"),]
+trump_plot <- ggplot(followers_ig_trump, aes(x=date, y=followers_change)) + geom_point()
+trump_plot
+
+#Trump Followers (Follower Change)
+
+followers_ig_trump <- followers_ig_2020[which(followers_ig_2020$name=="realdonaldtrump"),]
+
+followers_change_trump <- rep(0,5)
+followers_change_trump[1] <- sum(followers_ig_trump$followers_change[which(followers_ig_trump$month == "January")])
+followers_change_trump[2] <- sum(followers_ig_trump$followers_change[which(followers_ig_trump$month == "February")])
+followers_change_trump[3] <- sum(followers_ig_trump$followers_change[which(followers_ig_trump$month == "March")])
+followers_change_trump[4] <- sum(followers_ig_trump$followers_change[which(followers_ig_trump$month == "April")])
+followers_change_trump[5] <- sum(followers_ig_trump$followers_change[which(followers_ig_trump$month == "May")])
+
+followers_change_trump
+
+fl_trump_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"), levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_trump)))
+fl_trump_df
+
+trump_plot <- ggplot(fl_trump_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Trump's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+trump_plot
+```
+Warren Followers
+```{r}
+followers_ig_warren<- followers_ig[which(followers_ig$name=="elizabethwarren"),]
+warren_plot <- ggplot(followers_ig_warren, aes(x=date, y=followers_change)) + geom_point()
+warren_plot
+
+#Warren Followers (Follower Change)
+
+followers_ig_warren <- followers_ig_2020[which(followers_ig_2020$name=="elizabethwarren"),]
+
+followers_change_warren <- rep(0,5)
+followers_change_warren[1] <- sum(followers_ig_warren$followers_change[which(followers_ig_warren$month == "January")])
+followers_change_warren[2] <- sum(followers_ig_warren$followers_change[which(followers_ig_warren$month == "February")])
+followers_change_warren[3] <- sum(followers_ig_warren$followers_change[which(followers_ig_warren$month == "March")])
+followers_change_warren[4] <- sum(followers_ig_warren$followers_change[which(followers_ig_warren$month == "April")])
+followers_change_warren[5] <- sum(followers_ig_warren$followers_change[which(followers_ig_warren$month == "May")])
+
+followers_change_warren
+
+fl_warren_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"), levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_warren)))
+fl_warren_df
+
+
+warren_plot <- ggplot(fl_warren_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Warren's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+warren_plot
+```
+Ted Cruz Followers
+```{r}
+followers_ig_cruz<- followers_ig[which(followers_ig$name=="sentedcruz"),]
+cruz_plot <- ggplot(followers_ig_cruz, aes(x=date, y=followers_change)) + geom_point()
+cruz_plot
+
+#Cruz Followers (Follower Change)
+
+followers_ig_cruz <- followers_ig_2020[which(followers_ig_2020$name=="sentedcruz"),]
+
+followers_change_cruz <- rep(0,5)
+followers_change_cruz[1] <- sum(followers_ig_cruz$followers_change[which(followers_ig_cruz$month == "January")])
+followers_change_cruz[2] <- sum(followers_ig_cruz$followers_change[which(followers_ig_cruz$month == "February")])
+followers_change_cruz[3] <- sum(followers_ig_cruz$followers_change[which(followers_ig_cruz$month == "March")])
+followers_change_cruz[4] <- sum(followers_ig_cruz$followers_change[which(followers_ig_cruz$month == "April")])
+followers_change_cruz[5] <- sum(followers_ig_cruz$followers_change[which(followers_ig_cruz$month == "May")])
+
+followers_change_cruz
+
+fl_cruz_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"), levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_cruz)))
+fl_cruz_df
+
+cruz_plot <- ggplot(fl_cruz_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Cruz's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+cruz_plot
+```
+Joe Biden Followers
+```{r}
+followers_ig_biden<- followers_ig[which(followers_ig$name=="joebiden"),]
+biden_plot <- ggplot(followers_ig_biden, aes(x=date, y=followers_change)) + geom_point()
+biden_plot
+
+#Biden Followers (Follower Change)
+
+followers_ig_biden <- followers_ig_2020[which(followers_ig_2020$name=="joebiden"),]
+
+followers_change_biden <- rep(0,5)
+followers_change_biden[1] <- sum(followers_ig_biden$followers_change[which(followers_ig_biden$month == "January")])
+followers_change_biden[2] <- sum(followers_ig_biden$followers_change[which(followers_ig_biden$month == "February")])
+followers_change_biden[3] <- sum(followers_ig_biden$followers_change[which(followers_ig_biden$month == "March")])
+followers_change_biden[4] <- sum(followers_ig_biden$followers_change[which(followers_ig_biden$month == "April")])
+followers_change_biden[5] <- sum(followers_ig_biden$followers_change[which(followers_ig_biden$month == "May")])
+
+followers_change_biden
+
+
+fl_biden_df <- as.data.frame(cbind(month=factor(c("January", "February", "March", "April", "May"), levels=c("January", "February", "March", "April", "May")), follower_change= as.numeric(followers_change_biden)))
+fl_biden_df
+
+
+biden_plot <- ggplot(fl_biden_df, aes(x=month, y=follower_change)) + geom_line()+ ggtitle("Biden's Instagram Follower Change by Month") + xlab("Month") + ylab("Follower Change")
+biden_plot
+```
+
+All politicians' follower changes together
+```{r}
+all_folchange <- as.data.frame(rbind(Obama=followers_change_obama, Bernie= followers_change_bernie, Trump=followers_change_trump, Cruz= followers_change_cruz, Warren=followers_change_warren, Biden=followers_change_biden))
+colnames(all_folchange) <- c("January", "February", "March", "April", "May")
+all_folchange
+
+name_folcol <- c(rep("Obama",5), rep("Bernie",5), rep("Trump",5), rep("Cruz",5), rep("Warren",5), rep("Biden",5))
+month_folcol <- rep(c("January", "February", "March", "April", "May"),6)
+folchange_folcol <- c(followers_change_obama, followers_change_bernie, followers_change_trump, followers_change_cruz, followers_change_warren, followers_change_biden)
+
+all_folchange2 <- as.data.frame(cbind(name=name_folcol, month=month_folcol,FC=folchange_folcol))
+all_folchange2$month <- factor(all_folchange2$month, levels=c("January", "February", "March", "April", "May"))
+all_folchange2$FC <- as.numeric(as.character(all_folchange2$FC))
+
+ggplot(all_folchange2, aes(x=month, y=FC, group=name, color=name)) + geom_line() + ggtitle("Politicians' Change in Followers of 2020 By Month") + ylab("Follower Change") + xlab("Month") + labs(color='Politician')
+```
+
+To get # of Followers per month
+```{r}
+FC_jan20 <- followers_ig_2020[which(followers_ig_2020$date=="January 31, 2020"),]
+FC_jan20
+FC_feb20 <- followers_ig_2020[which(followers_ig_2020$date=="February 29, 2020"),]
+FC_feb20
+FC_mar20 <- followers_ig_2020[which(followers_ig_2020$date=="March 31, 2020"),]
+FC_mar20
+FC_apr20 <- followers_ig_2020[which(followers_ig_2020$date=="April 30, 2020"),]
+FC_apr20
+FC_may20 <- followers_ig_2020[which(followers_ig_2020$date=="May 11, 2020"),]
+FC_may20
+
+FC_all_monthly <- rbind(FC_may20,FC_apr20,FC_mar20, FC_feb20, FC_jan20)
+FC_all_monthly$month <- factor(FC_all_monthly$month, levels=c("January", "February", "March", "April", "May"))
+FC_all_monthly$followers <- as.numeric(as.character(FC_all_monthly$followers))
+
+#Bar chart
+FC_all_monthly_plot <- ggplot(FC_all_monthly, aes(x=month, y=followers, group=name, color=name)) + geom_bar(position="dodge",stat="identity")  + ggtitle("Politicians' Instagram Followers by Month 2020") + xlab("Month") + ylab("Instagram Follower Count") + labs(color='Politician')
+FC_all_monthly_plot
+
+#Line chart
+FC_all_monthly_lineplot <- ggplot(FC_all_monthly, aes(x=month, y=followers, group=name, color=name)) + geom_line() + ggtitle("Politicians' Instagram Followers by Month 2020") + xlab("Month") + ylab("Instagram Follower Count") + labs(color='Politician')
+FC_all_monthly_lineplot
+```
+
+LIKES FOR POLITICIANS
+```{r}
+#OBAMA
+obama_likes <- rep(0,5)
+obama_likes[1] <- mean(barack_ig$likes[which(barack_ig$month == "Jan")])
+obama_likes[2] <- mean(barack_ig$likes[which(barack_ig$month == "Feb")])
+obama_likes[3] <- mean(barack_ig$likes[which(barack_ig$month == "Mar")])
+obama_likes[4] <- mean(barack_ig$likes[which(barack_ig$month == "Apr")])
+obama_likes[5] <- mean(barack_ig$likes[which(barack_ig$month == "May")])
+obama_likes <- round(obama_likes, digits=0)
+obama_likes_df <- as.data.frame(cbind(name="Obama", month= c("Jan","Feb", "Mar","Apr","May"), likes=obama_likes))
+obama_likes_df
+
+#TRUMP
+trump_likes <- rep(0,5)
+trump_likes[1] <- mean(trump_ig$likes[which(trump_ig$month == "Jan")])
+trump_likes[2] <- mean(trump_ig$likes[which(trump_ig$month == "Feb")])
+trump_likes[3] <- mean(trump_ig$likes[which(trump_ig$month == "Mar")])
+trump_likes[4] <- mean(trump_ig$likes[which(trump_ig$month == "Apr")])
+trump_likes[5] <- mean(trump_ig$likes[which(trump_ig$month == "May")])
+trump_likes <- round(trump_likes, digits=0)
+trump_likes_df <- as.data.frame(cbind(name="Trump", month= c("Jan","Feb", "Mar","Apr","May"), likes=trump_likes))
+trump_likes_df
+
+#BERNIE
+bernie_likes <- rep(0,5)
+bernie_likes[1] <- mean(bernie_ig$likes[which(bernie_ig$month == "Jan")])
+bernie_likes[2] <- mean(bernie_ig$likes[which(bernie_ig$month == "Feb")])
+bernie_likes[3] <- mean(bernie_ig$likes[which(bernie_ig$month == "Mar")])
+bernie_likes[4] <- mean(bernie_ig$likes[which(bernie_ig$month == "Apr")])
+bernie_likes[5] <- mean(bernie_ig$likes[which(bernie_ig$month == "May")])
+bernie_likes <- round(bernie_likes, digits=0)
+bernie_likes_df <- as.data.frame(cbind(name="Bernie", month= c("Jan","Feb", "Mar","Apr","May"), likes=bernie_likes))
+bernie_likes_df
+
+#WARREN
+warren_likes <- rep(0,5)
+warren_likes[1] <- mean(warren_ig$likes[which(warren_ig$month == "Jan")])
+warren_likes[2] <- mean(warren_ig$likes[which(warren_ig$month == "Feb")])
+warren_likes[3] <- mean(warren_ig$likes[which(warren_ig$month == "Mar")])
+warren_likes[4] <- mean(warren_ig$likes[which(warren_ig$month == "Apr")])
+warren_likes[5] <- mean(warren_ig$likes[which(warren_ig$month == "May")])
+warren_likes <- round(warren_likes, digits=0)
+warren_likes_df <- as.data.frame(cbind(name="Warren", month= c("Jan","Feb", "Mar","Apr","May"), likes=warren_likes))
+warren_likes_df
+
+#BIDEN
+biden_likes <- rep(0,5)
+biden_likes[1] <- mean(biden_ig$likes[which(biden_ig$month == "Jan")])
+biden_likes[2] <- mean(biden_ig$likes[which(biden_ig$month == "Feb")])
+biden_likes[3] <- mean(biden_ig$likes[which(biden_ig$month == "Mar")])
+biden_likes[4] <- mean(biden_ig$likes[which(biden_ig$month == "Apr")])
+biden_likes[5] <- mean(biden_ig$likes[which(biden_ig$month == "May")])
+biden_likes <- round(biden_likes, digits=0)
+biden_likes_df <- as.data.frame(cbind(name="Biden", month= c("Jan","Feb", "Mar","Apr","May"), likes=biden_likes))
+biden_likes_df
+
+#CRUZ
+cruz_likes <- rep(0,5)
+cruz_likes[1] <- mean(cruz_ig$likes[which(cruz_ig$month == "Jan")])
+cruz_likes[2] <- mean(cruz_ig$likes[which(cruz_ig$month == "Feb")])
+cruz_likes[3] <- mean(cruz_ig$likes[which(cruz_ig$month == "Mar")])
+cruz_likes[4] <- mean(cruz_ig$likes[which(cruz_ig$month == "Apr")])
+cruz_likes[5] <- 0 #no posts in May
+cruz_likes <- round(cruz_likes, digits=0)
+cruz_likes_df <- as.data.frame(cbind(name="Cruz", month= c("Jan","Feb", "Mar","Apr","May"), likes=cruz_likes))
+cruz_likes_df
+
+#PENCE
+pence_likes <- rep(0,5)
+pence_likes[1] <- mean(pence_ig$likes[which(pence_ig$month == "Jan")])
+pence_likes[2] <- mean(pence_ig$likes[which(pence_ig$month == "Feb")])
+pence_likes[3] <- mean(pence_ig$likes[which(pence_ig$month == "Mar")])
+pence_likes[4] <- mean(pence_ig$likes[which(pence_ig$month == "Apr")])
+pence_likes[5] <- mean(pence_ig$likes[which(pence_ig$month == "May")])
+pence_likes <- round(pence_likes, digits=0)
+pence_likes_df <- as.data.frame(cbind(name="Pence", month= c("Jan","Feb", "Mar","Apr","May"), likes=pence_likes))
+pence_likes_df
+
+#ALL
+likes_all <- rbind(obama_likes_df,trump_likes_df, bernie_likes_df, warren_likes_df, biden_likes_df, cruz_likes_df, pence_likes_df)
+likes_all$month <- ordered(c("Jan","Feb", "Mar","Apr","May"))
+likes_all$likes <- as.numeric(as.character(likes_all$likes))
+head(likes_all)
+
+likes_plot <- ggplot(likes_all, aes(x=month, y=likes, group=name, color=name))+geom_line() + scale_x_discrete(limits=month.abb[1:5]) + ggtitle("Average Instagram Likes of Politicians by Month") + xlab("Month") + ylab("Average Likes") + labs(color='Politician')
+likes_plot
+```
+OVERALL ENGAGEMENT (LIKES TO FOLLOWS) *Pence excluded for lack of follower data
+```{r}
+#obama 
+TF_obama <- FC_all_monthly[which(FC_all_monthly$name=="barackobama"),]
+obama_engagement <- cbind(TF_obama, likes=rev(obama_likes))
+obama_engagement
+
+#bernie 
+TF_bernie <- FC_all_monthly[which(FC_all_monthly$name=="berniesanders"),]
+bernie_engagement <- cbind(TF_bernie, likes=rev(bernie_likes))
+bernie_engagement
+
+#trump 
+TF_trump <- FC_all_monthly[which(FC_all_monthly$name=="realdonaldtrump"),]
+trump_engagement <- cbind(TF_trump, likes=rev(trump_likes))
+trump_engagement
+
+#warren 
+TF_warren <- FC_all_monthly[which(FC_all_monthly$name=="elizabethwarren"),]
+warren_engagement <- cbind(TF_warren, likes=rev(warren_likes))
+warren_engagement
+
+#biden 
+TF_biden <- FC_all_monthly[which(FC_all_monthly$name=="joebiden"),]
+biden_engagement <- cbind(TF_biden, likes=rev(biden_likes))
+biden_engagement
+
+#cruz 
+TF_cruz <- FC_all_monthly[which(FC_all_monthly$name=="sentedcruz"),]
+cruz_engagement <- cbind(TF_cruz, likes=rev(cruz_likes))
+cruz_engagement
+
+#all engagement
+engagement_all <- rbind(obama_engagement,bernie_engagement,trump_engagement, warren_engagement,biden_engagement,cruz_engagement)
+engagement_all$Engagement <- engagement_all$likes/engagement_all$followers
+
+engagement_all_plot <- ggplot(engagement_all, aes(x=month, y=Engagement, group=name, color=name)) + geom_line() + ggtitle("Monthly Engagement by Average Likes to Follower Ratio") + labs(color='Politician')
+engagement_all_plot
+```
