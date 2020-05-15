@@ -1,0 +1,195 @@
+---
+title: "Captions_Comments_BCR.Rmd"
+author: "Tyler Wu"
+output: pdf_document
+---
+
+```{r,message=FALSE,warning=FALSE}
+# data wrangling
+library(lubridate)
+library(zoo) # forward replacing NAs
+library(av) # rendering mp4
+library(tidytext) # splitting string data into words
+library(stopwords)
+
+# data visualization
+library(tidyverse)
+library(gganimate)
+library(hrbrthemes)
+```
+
+# 1) Read in data
+```{r,message=FALSE,warning=FALSE}
+all_data <- read_csv('politicians_ig.csv')
+head(all_data)
+key_dates <- read_csv('key_dates.csv')[2:3]
+key_dates <- key_dates[c(1,2,14,17),] # only keep very important ones
+key_dates
+```
+
+# 2) Format dataframes
+```{r}
+# format key dates cols
+key_dates[nrow(key_dates) + 1,] = list('6/01/2019',"Coronavirus yet to occur") # add pre-virus label
+key_dates$dates <- mdy(key_dates$dates)
+key_dates$month <- format(key_dates$dates, format="%Y-%m")
+key_dates$description <- str_remove(key_dates$description, '\n')
+key_dates
+```
+
+```{r}
+captions <- all_data %>% select(caption,datetime,views,likes) %>% as_tibble()
+comments <- all_data %>% select(comments,datetime,views,likes) %>% as_tibble()
+```
+
+```{r}
+# define stop words, adding other miscellanious ones
+stop_words_es <- stopwords::stopwords("es", source = "stopwords-iso")
+stop_words_fr <- stopwords::stopwords("fr", source = "stopwords-iso")
+stop_words_en <- stopwords::stopwords("en", source = "stopwords-iso")
+stop_words_social <- c("link","bio","repost","make_repost")
+stop_words_extra <- c("i’m","we’re","it’s","you’re","that’s","they’ve")
+stop_words_comp <- c(stop_words_es,stop_words_fr,stop_words_en,stop_words_social,stop_words_extra)
+stop_words_comp <- data.frame("word" = stop_words_comp, lexicon = 'SMART',stringsAsFactors = F)
+tail(stop_words_comp)
+```
+
+```{r}
+# unnest captions into individual words
+captions <- captions %>% 
+  unnest_tokens(word, caption) %>% anti_join(stop_words_comp)
+
+# don't need time or day for our plot, just month and year
+captions$month <- format(as.POSIXct(captions$datetime,format='%Y-%m-%d %H:%M:%S'),format='%Y-%m')
+captions <-captions[order(captions$datetime),]
+head(captions)
+```
+
+# 2a) Create columns for bar chart race
+```{r}
+# remove NA words
+captions <- captions[complete.cases(captions[ ,4]),]
+
+# group by month and word, and find cumulative count to inform ranking
+captions <- captions %>% group_by(month,word) %>% mutate(n = seq_along(word)) %>% arrange(desc(n)) %>% ungroup()
+
+# remove duplicate rows to prevent word from ranking multiple times in a month
+# (note: if multiple appearances, will keep highest ranking since arranged by n descending)
+captions <- captions[!(duplicated(captions$month) & duplicated(captions$word)),]
+
+# then assign each word a rank
+captions <- captions %>% group_by(month) %>% mutate(rank = row_number(-n)) %>% ungroup() %>% arrange(month)
+
+# only interested in top 10 words for each month
+captions <- captions %>% group_by(month) %>% filter(rank <= 10)
+
+# also filter out dates before June 2019
+captions <- captions[-which(captions$datetime < "2019-06-01"),]
+captions
+```
+
+```{r}
+# append key dates dataframe by months to create a label
+captions <- left_join(captions,key_dates,by='month')
+
+# fill descriptions forward for in-between dates
+captions$description <- na.locf(captions$description,na.rm = FALSE)
+
+# make month label
+captions$month_label <- paste(captions$month,': ',captions$description)
+
+# add indicator var for whether a word is pandemic related
+covid_words <- c('coronavirus','covid','health','spread','pandemic','essential','protection','relief','nurses','workers','ventilator','ppe')
+captions$covid_word <- captions$word %in% covid_words
+```
+
+
+# 3) Create static bar chart for bar chart race
+```{r}
+p <- ggplot(captions,aes(rank)) + geom_tile(aes(y=n / 2, height=n,width=0.9,fill=covid_word),alpha=0.8,color=NA) + # covid-related words red, otherwise grey
+  geom_text(aes(y=0, label = paste(word, " ")),size=5,vjust=-0.5,hjust=0) + 
+  geom_text(aes(y = n, label = as.character(n),hjust = 0)) + 
+  coord_flip(clip = 'off',expand = FALSE) + 
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) + 
+  scale_fill_manual(values=c('#9ba5ba','#e6252b'))
+p <- p + labs(p,x = "", y = "Word Count (in Captions)",caption = "Source: Scraped directly from instagram") +
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+p
+```
+
+# 4) Animate barchart with gganimate
+```{r,warning=F,message=F}
+p <- p + transition_states(month_label,transition_length = 1,state_length = 4) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+anim_save('poli_ig_captions.gif',p)
+# anim_save('poli_ig_captions.mp4',p)
+```
+
+# 5) Repeat formatting process for comments
+```{r}
+comments <- comments %>% # unnest comments into individual words
+  unnest_tokens(word, comments) %>% anti_join(stop_words_comp)
+comments$month <- format(as.POSIXct(comments$datetime,format='%Y-%m-%d %H:%M:%S'),format='%Y-%m')
+comments <-comments[order(comments$datetime),]
+tail(comments)
+```
+
+```{r}
+# remove NA words
+comments <- comments[complete.cases(comments[ ,4]),]
+
+# group by date (month) then word -> cumulative count to inform ranking
+comments <- comments %>% group_by(month,word) %>% mutate(n = seq_along(word)) %>% arrange(desc(n)) %>% ungroup()
+
+# remove duplicate rows to prevent word from ranking twice
+# (if same word in same month, will keep highest ranking since arranged by n descending)
+comments <- comments[!(duplicated(comments$month) & duplicated(comments$word)),]
+
+# then rank each word
+comments <- comments %>% group_by(month) %>% mutate(rank = row_number(-n) * 1) %>% ungroup() %>% arrange(month)
+
+# only interested in top 10 words for each month
+comments <- comments %>% group_by(month) %>% filter(rank <= 10)
+
+# also filter out dates before June 2019
+comments <- comments[-c(1:90),]
+```
+
+```{r}
+# append key dates to months for label
+comments <- left_join(comments,key_dates,by='month')
+
+# fill forward descriptions
+comments$description <- na.locf(comments$description,na.rm = FALSE)
+
+# make month label
+comments$month_label <- paste(comments$month,': ',comments$description)
+
+# add indicator var for whehter word is pandemic related
+covid_words <- c('coronavirus','corona','covid','virus','health','spread','pandemic','essential','protection','relief','nurses','workers','ventilator','ppe')
+comments$covid_word <- comments$word %in% covid_words
+comments
+```
+
+
+# 3) Create static bar chart for bar chart race
+```{r}
+q <- ggplot(comments,aes(rank)) + geom_tile(aes(y=n / 2, height=n,width=0.9,fill=covid_word),alpha=0.8,color=NA) + # covid-related words red, otherwise grey
+  geom_text(aes(y=0, label = paste(word, " ")),size=5,vjust=-0.5,hjust=0) + 
+  geom_text(aes(y = n, label = as.character(n),hjust = 0)) + 
+  coord_flip(clip = 'off',expand = FALSE) + 
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) + 
+  scale_fill_manual(values=c('#9ba5ba','#e6252b'))
+q <- q + labs(q,x = "", y = "Word Count (in Top Comments)",caption = "Source: Scraped directly from instagram") +
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+q
+```
+# 4) Animate barchart with gganimate
+```{r,warning=F,message=F}
+q <- q + transition_states(month_label,transition_length = 1,state_length = 4) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+anim_save('poli_ig_comments.gif',q)
+# anim_save('poli_ig_comments.mp4',q)
+```

@@ -1,0 +1,175 @@
+---
+title: "Captions_Sentiments_BCR.Rmd"
+author: "Tyler Wu"
+output: pdf_document
+---
+
+```{r,message=FALSE,warning=FALSE}
+library(gganimate)
+library(hrbrthemes)
+library(tidyverse)
+library(tidytext)
+library(lubridate)
+library(zoo) # forward replacing NAs
+library(av) # rendering mp4
+```
+
+# 1) Read in data
+```{r,message=FALSE,warning=FALSE}
+all_data <- read_csv('politicians_ig.csv')
+head(all_data)
+key_dates <- read_csv('key_dates.csv')[2:3]
+key_dates <- key_dates[c(1,2,14,17,29),] # only keep very important ones
+key_dates
+```
+
+# 2) Format dataframes
+```{r}
+# format dates to datetime
+key_dates <- key_dates %>% rename(date = dates)
+key_dates$description <- str_remove(key_dates$description, '\n')
+key_dates$description <- str_remove(key_dates$description, 'LMAO')
+key_dates[nrow(key_dates) + 1,] = list('9/01/2018',"Coronavirus yet to occur") # add pre-virus label
+key_dates$date <- mdy(key_dates$date)
+key_dates$month <- format(key_dates$date, format="%Y-%m")
+key_dates
+```
+
+```{r}
+# define stop words
+stop_words_es <- stopwords::stopwords("es", source = "stopwords-iso")
+stop_words_fr <- stopwords::stopwords("fr", source = "stopwords-iso")
+stop_words_en <- stopwords::stopwords("en", source = "stopwords-iso")
+stop_words_social <- c("link","bio","repost","make_repost")
+stop_words_extra <- c("i’m","we’re","it’s","you’re","that’s","they’ve")
+stop_words_comp <- c(stop_words_es,stop_words_fr,stop_words_en,stop_words_social,stop_words_extra)
+stop_words_comp <- data.frame("word" = stop_words_comp, lexicon = 'SMART',stringsAsFactors = F)
+tail(stop_words_comp)
+```
+```{r}
+captions <- all_data %>% select(post_url,name,caption,datetime) %>% as_tibble() # note post_url is used as a unique identifier between posts
+comments <- all_data %>% select(post_url,name,comments,datetime) %>% as_tibble()
+```
+
+```{r}
+captions <- captions %>% # unnest captions into individual words
+  unnest_tokens(word, caption) %>% anti_join(stop_words_comp)
+# don't need time or day for our plot, just month and year
+captions$month <- format(as.POSIXct(captions$datetime,format='%Y-%m-%d %H:%M:%S'),format='%Y-%m')
+captions <-captions[order(captions$datetime),]
+head(captions)
+```
+
+# 2a) Create columns for bar chart race
+```{r}
+# use bing to categorize sentiment of words
+bing <- get_sentiments("bing")
+captions <-  captions %>% inner_join(bing,by='word') %>%
+  group_by(word) %>% 
+  mutate(n = n()) %>%
+  ungroup()
+captions <- captions[captions$word != 'trump',] # trump is a pronoun, cannot apply sentiment
+captions %>% arrange(desc(n))
+```
+
+```{r}
+bing_word_counts <- captions %>%
+  inner_join(get_sentiments("bing")) %>%
+  count(word, sentiment, sort = TRUE) %>% # 
+  ungroup()
+bing_word_counts <- bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10)
+top_bing_words <- bing_word_counts$word
+```
+
+
+```{r}
+# join top words sentiment words with original csv to track sentiment over time
+# top_words <- captions[captions$word %in% top_bing_words,]
+top_words <- captions %>% group_by(word) %>% mutate(tally = seq_along(word)) %>% arrange(desc(n)) %>% ungroup()
+
+# remove duplicates of word per month
+top_words <- top_words[!(duplicated(top_words$month) & duplicated(top_words$word)),]
+top_words <-top_words %>% group_by(month)  %>% mutate(month_rank = row_number(-tally))
+top_words <- top_words[top_words$month_rank <= 10,]
+top_words <- top_words %>% arrange(month)
+```
+
+```{r}
+# add month_label (do specific events lead to surge in followers?)
+top_words <- left_join(top_words,key_dates,by='month')
+# order dates
+top_words <- top_words[order(top_words$month),]
+# make description 'fill forward' for NA vals
+top_words$description <- na.locf(top_words$description,na.rm = FALSE)
+# then paste date and description together
+top_words$month_label <- paste(top_words$month,': ',top_words$description)
+top_words
+```
+
+# 3) Create BCR for top sentiment words
+```{r}
+p <- ggplot(top_words,aes(month_rank)) + geom_tile(aes(y=tally / 2, height=tally,width=0.8,fill =sentiment),alpha=0.8,color=NA) + 
+  geom_text(aes(y=0, label = paste(word, " ")),size=5,vjust=-0.5,hjust=0) + 
+  geom_text(aes(y = tally, label = as.character(tally),hjust = 0)) + 
+  coord_flip(clip = 'off',expand = FALSE) +
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) + 
+  scale_fill_manual(values=c('#e6575c','#4d5dd1'))
+p <- p + labs(p,x = "", y = "Word Count (in Captions)",caption = "Source: Scraped directly from Instagram") +
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+p
+```
+```{r}
+p <- p + transition_states(month_label,transition_length = 1,state_length = 4) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+
+p <- animate(p, duration = 20,
+             fps = 20, renderer = av_renderer()) # 30 * 20 -> 200 frames 
+anim_save('poli_ig_senti_words.mp4',p)
+```
+
+###---END OF CODE FOR GRAPHS THAT WERE USED---###
+
+# BONUS: Plot sentiment per month
+```{r}
+views_likes <- all_data %>% select(post_url,name,datetime,views,likes) %>% as_tibble() # will use post_url to join sentiment to views,likes
+```
+
+```{r}
+captions$positive <- captions$sentiment == 'positive' # turns sentiment into T/F so we can sum
+captions$positive[captions$positive == F] <- -1 # assign negative sentiments -1, (positives stay as 1)
+captions_sent <- captions %>% group_by(post_url) %>% mutate(overall_sent = sum(positive))
+captions_sent <- captions_sent[!(duplicated(captions_sent$post_url)),] %>% select(post_url,month,overall_sent) # only need one instance of each post and only overall sent
+```
+
+```{r}
+views_likes <- left_join(views_likes,captions_sent,by='post_url') %>% arrange(month)
+views_likes <- views_likes[-(1:186),] # only after dec 2019
+```
+
+```{r}
+g <- ggplot(views_likes,aes(x=month,y=overall_sent,group = month),alpha=0.3) + facet_wrap(~name,ncol=2) + aes(fill = as.factor(name))
+h <- g + geom_boxplot(outlier.size = 0.75) + stat_summary(fun.y=mean, geom="line", aes(group=1)) + labs(title = 'Sentiment per Month',y = 'Overall Sentiment Rating',fill = 'Politician') + scale_y_continuous(breaks = c(-15,-10,-5,0,5), labels = c('-15','-10','-5','0','5')) + 
+scale_x_discrete(breaks = c('2019-12','2020-02','2020-04'), labels=c('Dec 2019','Feb 2020','April 2020')) +
+theme(axis.text=element_text(size=7))
+h
+```
+
+# Bonus: post count during each month for each politician
+```{r}
+posts <- captions %>% group_by(name,month) %>% mutate(post_count = length(unique(post_url)))
+# only need one row for each post
+posts <- posts[!duplicated(posts$post_url),]
+```
+
+```{r}
+# plot posts per month for each politician
+q <- ggplot(posts,aes(x = month, y=post_count)) + facet_wrap(~name,ncol = 2,scales = "free") + aes(color = as.factor(name)) + labs(title = 'Posts per Month',y = 'Overall Sentiment Rating',fill = 'Politician') + scale_y_continuous(breaks = c(-15,-10,-5,0,5), labels = c('-15','-10','-5','0','5')) + 
+scale_x_discrete(breaks = c('2019-12','2020-02','2020-04'), labels=c('Dec 2019','Feb 2020','April 2020')) +
+  geom_point()
+q
+```
+
+

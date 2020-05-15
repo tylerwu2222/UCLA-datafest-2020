@@ -1,0 +1,182 @@
+---
+title: "Captions_Bigrams"
+author: "Tyler Wu"
+output: pdf_document
+---
+
+```{r,message=FALSE,warning=FALSE}
+library(lubridate)
+library(zoo) # forward replacing NAs
+library(av) # rendering mp4
+library(hrbrthemes)
+library(tidyverse)
+library(gganimate)
+library(igraph) # for network graph
+library(ggraph) # for network graph
+```
+
+# 1) Read in data
+```{r,message=FALSE,warning=FALSE}
+all_data <- read_csv('politicians_ig.csv')
+head(all_data)
+key_dates <- read_csv('key_dates.csv')[2:3]
+key_dates <- key_dates[c(1,2,14,17),] # only keep very important ones
+key_dates
+```
+
+# 2) Format dataframes
+```{r}
+# format key dates cols
+key_dates[nrow(key_dates) + 1,] = list('11/01/2019',"Coronavirus yet to occur") # add pre-virus label
+key_dates$dates <- mdy(key_dates$dates)
+key_dates$month <- format(key_dates$dates, format="%Y-%m")
+key_dates$description <- str_remove(key_dates$description, '\n')
+key_dates
+```
+
+```{r}
+captions <- all_data %>% select(name,post_url,caption,datetime)
+```
+
+```{r}
+# unnest captions into bigrams (2 words)
+caption_bigrams <- captions %>%
+  unnest_tokens(bigram, caption, token = "ngrams", n = 2)
+head(caption_bigrams)
+```
+
+```{r}
+# look at most common bigrams -> many articles, social media related words -> need to filter stopwords
+caption_bigrams %>%
+  count(bigram, sort = TRUE) %>% head()
+```
+
+```{r}
+# define stop words
+stop_words_es <- stopwords::stopwords("es", source = "stopwords-iso")
+stop_words_fr <- stopwords::stopwords("fr", source = "stopwords-iso")
+stop_words_en <- stopwords::stopwords("en", source = "stopwords-iso")
+stop_words_social <- c("link","bio","repost","make_repost")
+stop_words_extra <- c("i’m","we’re","it’s","you’re","that’s","they’ve")
+stop_words_comp <- c(stop_words_es,stop_words_fr,stop_words_en,stop_words_social,stop_words_extra)
+stop_words_comp <- data.frame("word" = stop_words_comp, lexicon = 'SMART',stringsAsFactors = F)
+tail(stop_words_comp)
+```
+
+```{r}
+# filter for stop words
+bigrams_sep <- caption_bigrams %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+bigrams_filter <- bigrams_sep %>%
+  filter(!word1 %in% stop_words_comp$word) %>%
+  filter(!word2 %in% stop_words_comp$word)
+
+# new bigram counts:
+bigram_counts <- bigrams_filter %>% 
+  count(word1, word2, sort = TRUE) %>% na.omit()
+bigram_counts %>% head()
+```
+
+# 2a) Create columns for bar chart race
+```{r}
+# month col
+caption_bigrams$month <- format(as.POSIXct(caption_bigrams$datetime,format='%Y-%m-%d %H:%M:%S'),format='%Y-%m')
+caption_bigrams <-caption_bigrams[order(caption_bigrams$datetime),]
+head(caption_bigrams)
+```
+
+```{r}
+# remove NA words
+caption_bigrams <- caption_bigrams[complete.cases(caption_bigrams[ ,4]),]
+
+# filter out stopwords (if either word of the bigram is in stopwords then remove)
+caption_bigrams <- caption_bigrams %>%
+  separate(bigram, into = c('word1','word2'),sep = " ", remove = FALSE)
+caption_bigrams <- caption_bigrams %>%
+  filter(!word1 %in% stop_words_comp$word) %>%
+  filter(!word2 %in% stop_words_comp$word)
+
+# group by month and word, then find cumulative count to inform ranking
+caption_bigrams <- caption_bigrams %>% group_by(month,bigram) %>% mutate(n = seq_along(bigram)) %>% arrange(desc(n)) %>% ungroup() # count for bigram/day
+
+# remove duplicate rows to prevent bigram from ranking multiple times in a month
+# (note: if multiple appearances, will keep highest ranking since arranged by n descending)
+caption_bigrams <- caption_bigrams[!(duplicated(caption_bigrams$month) & duplicated(caption_bigrams$bigram)),]
+
+# then rank bigrams for each politician, each month
+caption_bigrams <- caption_bigrams %>% group_by(month,name) %>% mutate(rank = row_number(-n) * 1) %>% ungroup() %>% arrange(month)
+
+# only interested in top 10 bigrams for each month, but keep all bigrams for seperate network graph
+caption_bigrams_all <- caption_bigrams
+caption_bigrams <- caption_bigrams %>% group_by(month) %>% filter(rank <= 10) %>% arrange(month)
+
+# also filter out dates before Nov 2019
+caption_bigrams <- caption_bigrams[-c(1:130),]
+caption_bigrams
+```
+
+```{r}
+# append key dates to months for label
+caption_bigrams <- left_join(caption_bigrams,key_dates,by='month')
+
+# fill forward descriptions
+caption_bigrams$description <- na.locf(caption_bigrams$description,na.rm = FALSE)
+
+# make month label
+caption_bigrams$month_label <- paste(caption_bigrams$month,': ',caption_bigrams$description)
+
+# add indicator var for whehter word is pandemic related
+covid_words <- c('coronavirus','covid','health','spread','pandemic','essential','protection','relief','nurses','workers','ventilator','ppe','social','distancing','virtual','medical','safe','standwithessentialworkers','tests','sick','19','combatcovid19')
+caption_bigrams$covid_word <-  caption_bigrams$word1 %in% covid_words | caption_bigrams$word2 %in% covid_words
+caption_bigrams
+```
+
+# 3) Create Bar Chart Race for bigrams of each politician
+```{r}
+for(name in unique(caption_bigrams$name)){
+  p <- ggplot(caption_bigrams[caption_bigrams$name == name,],aes(rank)) + 
+    geom_tile(aes(y=n / 2, height=n,width=0.9,fill = covid_word),alpha=0.8,color=NA) + # covid-related words red, otherwise grey
+    geom_text(aes(y=0, label = paste(bigram, " ")),size=5,vjust=-0.5,hjust=0) + 
+    geom_text(aes(y = n, label = as.character(n),hjust = 0),size=5) + 
+    coord_flip(clip = 'off',expand = FALSE) + 
+    scale_x_reverse() +
+    guides(color = FALSE, fill = FALSE) + 
+    scale_fill_manual(values=c('#9ba5ba','#e6252b'))
+  p <- p + labs(p,x = "", y = paste0(name,"'s Bigram Count (in Captions)"),caption = "Source: Scraped directly from instagram") +
+    theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+  p <- p + transition_states(month_label,transition_length = 1,state_length = 4) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+  anim_save(paste0(name,'_bigrams.gif'),p)
+}
+
+```
+
+# 4) create bigram network visual for further exploration
+```{r}
+# filter data into correct format
+bigram_net <- caption_bigrams_all %>% select(word1,word2,n)
+```
+
+```{r}
+# make igraph, filtering for only relatively common combinations
+bigram_graph <- bigram_net %>% filter(n > 5) %>% 
+  graph_from_data_frame()
+
+bigram_graph
+```
+
+```{r}
+# make bigram network
+set.seed(0)
+
+a <- grid::arrow(type = "open", length = unit(.10, "inches"))
+
+g <- ggraph(bigram_graph, layout = "fr") +
+  geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                 arrow = a, end_cap = circle(.07, 'inches')) +
+  geom_node_point(color = '#9ba5ba', size = 3) +
+  geom_node_text(aes(label = name), size = 2.5,vjust = 1.5, hjust = 1) +
+  theme_void()
+ggsave('bigram_network.png')
+```
+

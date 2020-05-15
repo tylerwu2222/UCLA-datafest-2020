@@ -1,0 +1,435 @@
+---
+title: "Bing_NRC_Sentiments"
+author: "Linus Jen"
+date: "5/12/2020"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r packages, warning=FALSE,message=FALSE, echo=FALSE}
+
+# Packages used. Echo=FALSE to avoid taking up space
+
+#options(tinytex.verbose = TRUE)
+# install.packages("DescTools")
+# install.packages("tidytext")
+# install.packages("forcats")
+#tinytex::install_tinytex()
+#tinytex::tlmgr_install(c('texlive-scripts','dehyph-exptl'))
+#tinytex::tlmgr_update()
+#tinytex::reinstall_tinytex()
+#tinytex:::is.tinytex()
+# install.packages("textdata")
+# install.packages("gganimate")
+# install.packages("gifski")
+# install.packages("plotly")
+# install.packages("av")
+library(textdata)
+library(stringr)
+library(ggplot2)
+library(dplyr)
+library(tidytext)
+library(DescTools)
+library(forcats)
+library(tidyr)
+library(gganimate)
+library(gifski)
+library(plotly)
+library(av)
+```
+
+```{r IGdata, warning=FALSE, echo=FALSE, message=FALSE}
+
+# Data cleanup. Echo = FALSE to save space
+
+rawdata_IG <- read.csv("politicians_ig.csv")
+# glimpse(rawdata_IG)
+
+#Identifier to show where each tweet came from
+rawdata_IG$identifier <- 1:nrow(rawdata_IG)
+
+# Cleanup the data so that we only have name, type, caption, post date, views, and likes
+
+# Note that comments were excluded, as they didn't pick up all the comments, just those that were deemed "important"
+
+index = which(names(rawdata_IG) %in% c("name", "post_type", "caption", "mdy_time", "views", "likes", "identifier"))
+
+IG_data <- rawdata_IG[,index]
+
+# Fixing time to be a Date type
+IG_data$mdy_time <- as.Date(IG_data$mdy_time, format = "%B %d, %Y")
+
+#Delete data before December of 2020
+old_index <- which(IG_data$mdy_time < "2019-12-1")
+
+IG_data <- IG_data[-old_index,]
+```
+
+```{r CaptionManipulation, warning=FALSE, message=FALSE, echo=FALSE}
+
+# Data cleanup. Echo = FALSE to save space
+
+# Fix Donald Trump's Name to be simply "Donald Trump"
+IG_data$name <- str_replace_all(IG_data$name, "President Donald J. Trump", "Donald Trump")
+
+# Find all the tweets associated with each politician
+names <- as.character(levels(factor(IG_data$name)))
+Politicians <- vector(mode = "list", length = length(names))
+names(Politicians) = names
+
+# Fill in each politician with its corresponding tweets
+for(i in 1:length(names)) {
+  Politicians[[i]] <- which(IG_data$name == names[i])
+}
+
+# Breaking up captions into tidy format to count word usage
+IG_captions <- tibble(identifier = IG_data$identifier, text = IG_data$caption, Politician = IG_data$name, date = IG_data$mdy_time)
+IG_words <- IG_captions %>% unnest_tokens(word, text)
+
+# Change accented letters to regular
+IG_words$word = iconv(IG_words$word, to='ASCII//TRANSLIT')
+
+# Group by post, word
+IG_words <- IG_words %>% group_by(identifier, word, Politician)
+
+# Remove punctuation, lowercase
+IG_words$word <- str_remove_all(IG_words$word, "[:punct:]")
+IG_words$word <- str_remove_all(IG_words$word, "[:blank:]")
+IG_words$word <- str_remove_all(IG_words$word, "[>\\|\\$]")
+IG_words$word <- tolower(IG_words$word)
+
+# Manually 
+deleteindex <- c()
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a1$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^ac$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aa$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^de$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^ay$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aaa$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^\\w$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^\\w\\w$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a>aa$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a\\|$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aaaa$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aaa1$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a1ea[1]$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aoaa$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a1e1$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^a1ea$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^fakhran$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^para$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^itac$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^icu$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^aaaca$")))
+deleteindex <- c(deleteindex, which(str_detect(IG_words$word, "^theyac$")))
+
+# remove wording
+IG_words <- IG_words[-deleteindex,]
+
+# Remove stopwords from our list
+data(stop_words)
+IG_words <- anti_join(IG_words, stop_words, by = "word")
+
+# Count the appearance of each word by identifier, word
+IG_wordcount <- IG_words %>% group_by(identifier, word) %>% count(word, sort = TRUE)
+```
+
+```{r Sentiments}
+# BING lexicon table, needed to remove "positive" value to "trump"
+
+table <- get_sentiments("bing")
+table <- table[-which(table$word == 'trump'),]
+```
+
+Below, we'll look at each politician's use of keywords from December 2020 to May 11th, 2020. Note that this wasn't used in our presentation!
+
+```{r Overall}
+graph <- vector(mode = "list", length = length(names))
+for(i in 1:length(Politicians)) {
+  data_holder <- head(IG_wordcount[which(IG_wordcount$identifier %in% Politicians[[i]]),], 30)
+  data_holder <- data_holder %>% group_by(word) %>% summarise(n = sum(n))
+  p <- data_holder %>% arrange(desc(n)) %>% ggplot(aes(x = reorder(word, n), y = n)) 
+  p <- p + geom_bar(stat = "identity")
+  p <- p + coord_flip()
+  p <- p + theme_minimal()
+  p <- p + labs(title = paste("Main Words Used by", names[i], "from December to May"))
+  graph[[i]] <- p
+}
+par(mfrow = c(2, 3))
+graph
+```
+
+For this given time period, we will look into each politicians general sentiments conveyed.
+
+```{r BingOv}
+# Use bing to label the sentiment of each wording by 'positive' or 'negative'
+IG_sentiment_bing <- IG_words %>% group_by(identifier, word) %>% inner_join(table)
+
+overall_feeling_bing <- IG_sentiment_bing %>% group_by(Politician, sentiment) %>% summarise(count = n())
+
+# Graph the general sentiments by Politician over time
+# e <- 
+ggplot(overall_feeling_bing, aes(x = reorder(Politician, count), y = count, fill = sentiment)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~sentiment) + coord_flip() +
+  labs(title = "Meaning Behind the Captions of Politicians", subtitle = "Feelings conveyed, as defined by the BING Lexicon", x = "Politician", caption = "Data source: Instagram", y = "", x = "Count") +
+  theme(legend.position = "none")
+
+# ggsave("Emotions_Bing_overall.png", e)
+
+# Checking ratio of positive to negative comments
+# Pos/neg ratio of comments
+overall_feeling_bing_ratio <- overall_feeling_bing %>% spread(sentiment, count) %>% mutate(ratio = round(positive/negative, 3))
+
+ratio_tier <- function(ratio) {
+  for(i in 1:length(ratio)) {
+    if(ratio[i] > 2) return('pos')
+    else if(ratio <=2 & ratio >=1) return('neutral')
+    else if(ratio < 1) return('neg')
+  }
+}
+
+overall_feeling_bing_ratio <- overall_feeling_bing_ratio %>% mutate(rating = ratio_tier(ratio)) %>% arrange(desc(ratio))
+
+# Graph sentiments ratio by each politician
+# r <- 
+ggplot(overall_feeling_bing_ratio, aes(x = reorder(Politician, ratio), y = ratio, fill = rating)) + 
+  geom_bar(stat="identity") +
+  labs(title = "Ratio of Positive to Negative Terms in Captions of Politicians", subtitle = "Feelings conveyed, as defined by the BING Lexicon", x = "", y = "Ratio of Positive to Negative", caption = "Date source: Instagram") + 
+  ylim(0, 4.5) + 
+  geom_text(aes(label = ratio), size = 3, position = position_dodge(width = .9), hjust = -.25) + 
+  coord_flip()
+
+# ggsave("Ratio_bing.png", r)
+```
+
+#### Dates
+
+Going forward, we'll be looking at how each politician has responded before and after each crucial date. Dates will be shown below.
+
+
+```{r keydates}
+# Load dates into R, covert to date type
+keydates <- read.csv("key_dates.csv")
+keydates$dates <- as.Date(keydates$dates, format = "%m/%d/%Y")
+
+# Remove Unimportant Dates
+date_index <- c(2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 30)
+keydates <- keydates[-date_index,]
+keydates
+
+# Label key events
+key_events <- rep(NA, nrow(IG_sentiment_bing))
+nrow(keydates)
+for(i in 1:nrow(keydates)) {
+  index <- which(IG_sentiment_bing$date >= keydates$dates[i] & IG_sentiment_bing$date < keydates$dates[i+1])
+  key_events[index] <- i+1
+}
+# Had issues with my for loop, so manually fixed it outside
+key_events[which(IG_sentiment_bing$date <= keydates$dates[1])] <- 1
+key_events[which(IG_sentiment_bing$date >= keydates$dates[7])] <- 8
+
+# Add to our IG_sentiment_bing data frame
+IG_sentiment_bing <- data.frame(IG_sentiment_bing, event_index = factor(key_events, levels = c(1:8)))
+
+# Graph based off introduction of coronavirus
+event_bing <- IG_sentiment_bing %>% group_by(event_index, Politician, sentiment) %>% summarise(count = n())
+
+# Graphing: was there a change in emotions before and after coronavirus's introduction?
+# w <- 
+ggplot(event_bing, aes(x = event_index, y = count, fill = sentiment)) +
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  labs(title = "Emotion Change By Politician", subtitle = "As Defined by the BING Lexicon", xlab = "", caption = "Data source: Instagram") +
+  facet_wrap(~Politician, scales = "free") +
+  coord_flip() +
+  facet_wrap(~Politician, scales = "free") 
+
+# Originally, this was an animated graph, but deemed not necessary
+#+
+#  transition_states(event_index, wrap = FALSE) +
+#  shadow_mark() + enter_grow() + enter_fade()
+
+# ggsave("Terms_By_Event_Bing.png")
+```
+
+Below will analyze how emotions have changed, by month.
+
+```{r}
+# Adding in a months column to see development by month
+month_analysis_bing <- IG_sentiment_bing %>% mutate(month = factor(months(date), levels = c("December", "January", "February", "March", "April", "May")))
+
+# Find the number of times terms were used per month
+month_analysis_bing <- month_analysis_bing %>% group_by(month, Politician, sentiment) %>% summarise(count = n())
+
+# Graph results
+# b <- 
+ggplot(month_analysis_bing, aes(x = month, y = count, fill = sentiment)) +
+  geom_bar(stat = "identity", position = position_dodge()) + 
+  coord_flip() +
+  facet_wrap(~Politician, scales = "free") +
+  labs(title = "Changes in the Hidden Meaning of Captions of Politicians", subtitle = "As defined from the BING Lexicon", xlab = "", caption = "Data source: Instagram") 
+
+# This was originally an animated plot, but deemed unnecessary
+#+
+#  transition_states(month, wrap = FALSE) + shadow_mark() +
+#  enter_grow() + enter_fade()
+
+# ggsave("Emotions_BING_count.png", b)
+```
+
+Below, we'll look at some of the raw emotions, not simply just positive or negative emotions, that are conveyed through each politician's Instagrams. This will be using the NRC lexicon instead of Bing.
+
+First off, we'll be looking at the overall emotions conveyed over the past 6 months.
+
+```{r nrcOverall}
+# Link words to the NRC table
+nrc_table <- get_sentiments("nrc")
+IG_sentiment_nrc <- IG_words %>% group_by(identifier, word) %>% inner_join(nrc_table)
+
+# Create dataframe for later use
+IG_sentiment_nrc_ID <- IG_sentiment_nrc %>% group_by(identifier, Politician, date, sentiment) %>% summarise(count = n())
+
+# How much of each emotion comes up in the politicians' instagrams?
+overall_feeling_nrc <- IG_sentiment_nrc %>% group_by(Politician, sentiment) %>% summarise(count = n())
+
+# Graph results
+# a <- 
+ggplot(overall_feeling_nrc, aes(x = reorder(Politician, count), y = count, fill = sentiment)) +
+  geom_bar(stat = "identity", position=position_dodge()) + 
+  coord_flip() + facet_wrap(~sentiment) +
+  theme(legend.position = "none") + 
+  labs(title = "Meaning Behind the Words of Politicians", subtitle = "Sentiments, as explained by the NRC Emotion Lexicon", y = "Count", x = "", caption = "Data source: Instagram")
+
+# ggsave("Emotions_NRC_count.png", a)
+
+# Graph Ratio of emotions to total emotional terms
+emotion_total <- numeric(length(names))
+for(i in 1:length(names)) {
+  emotion_total[i] = sum(overall_feeling_nrc$count[overall_feeling_nrc == names[i]])
+}
+
+# (Inefficiently) find the total number of terms used by politician
+# I later found how useful inner_join() was, but I didn't want to fix a problem that wasn't broken
+total_terms <- rep(NA, nrow(overall_feeling_nrc))
+
+for(i in 1:length(total_terms)) {
+  for(j in 1:length(names)) {
+    if(overall_feeling_nrc$Politician[i] == names[j]) {
+      total_terms[i] <- emotion_total[j]
+      next
+    }
+  }
+}
+
+# Combine into a data frame, and create a proportion column
+overall_feeling_nrc_ratio <- data.frame(overall_feeling_nrc, total_terms)
+
+overall_feeling_nrc_ratio <- overall_feeling_nrc_ratio %>% mutate(proportion = round(count/total_terms, 3))
+
+# Plot results
+#h <- 
+ggplot(overall_feeling_nrc_ratio, aes(x = reorder(Politician, proportion), y = proportion, fill = sentiment)) +
+  geom_bar(stat = "identity", position=position_dodge()) + 
+  coord_flip() + facet_wrap(~sentiment) +
+  theme(legend.position = "none") + 
+  labs(title = "Emotions Conveyed By Politician", subtitle = "Feelings expressed, as defined by the NRC Emotion Lexicon", y = "Proportion", x = "", caption = "Data source: Instagram")
+
+# ggsave("Emotions_NRC_prop.png", h)
+```
+
+Now, we'll look at how these emotions changed over time per person.
+
+First, we'll look at each month's change.
+
+Pardon the variable names. I originally had done it one way, and used the below code as a trial run, but it ended up working while the main part didn't, and I didn't bother changing the variables back.
+```{r}
+### Experiment
+blah <- IG_sentiment_nrc %>% mutate(month = months(date)) %>% group_by(Politician, sentiment, month) %>% summarise(count = n())
+
+blah2 <- blah %>% group_by(Politician, month) %>% summarise(total = sum(count))
+
+blah
+# Add the total in to create proportion of emotions used per month
+month_blah <- blah %>% group_by(Politician, sentiment, month) %>% inner_join(blah2) %>% mutate(proportion = round(count/total, 3))
+
+month_blah$month <- factor(month_blah$month, levels = c("December", "January", "February", "March", "April", "May"))
+
+# Plot findings
+# g <- 
+ggplot(month_blah, aes(x = Politician, y = proportion, color = Politician, size = proportion)) + 
+  geom_point(alpha = .5, show.legend = FALSE) + 
+  facet_wrap(~sentiment) + coord_flip() + 
+  scale_size(range = c(.05, 7)) +  
+transition_states(month, transition_length = 3, state_length = 1) +
+  ease_aes('linear') + 
+  labs(subtitle = "{closest_state}", title = "Feelings Behind the Captions of Politicians, by Month", y = "Proportion", x = "") +
+  theme(plot.subtitle = element_text(size = 15, face = "bold", hjust = .5), plot.title = element_text(hjust =.5))
+
+# anim_save("Emotions_By_Month_NRC.gif", g)
+```
+
+Next, we'll look at the response to each key event.
+
+```{r}
+# Label key events
+key_events <- rep(NA, nrow(IG_sentiment_nrc))
+key_label <- rep(NA, nrow(IG_sentiment_nrc))
+
+# Had issues with my for loop, so manually did it outside
+key_events[which(IG_sentiment_nrc$date <= keydates$dates[1])] <- 1
+key_label[which(IG_sentiment_nrc$date <= keydates$dates[1])] <- "Before 12/31/2020"
+
+for(i in 1:nrow(keydates)) {
+    index <- which(IG_sentiment_nrc$date >= keydates$dates[i] & IG_sentiment_nrc$date < keydates$dates[i+1])
+    key_events[index] <- i+1
+    key_label[index] <- paste("After", keydates$dates[i],":", keydates$description[i])
+}
+
+# Had issues running my loop, so using this to fix it
+key_events[which(IG_sentiment_nrc$date >= keydates$dates[7])] <- 8
+key_label[which(IG_sentiment_nrc$date >= keydates$dates[7])] <- paste("After", keydates$dates[7], ":", keydates$description[7])
+
+# We need to reorder the factor level of the description
+key_label <- factor(key_label)
+key_label <- relevel(key_label, "Before 12/31/2020")
+# levels(key_label) # Perfect!
+
+# Add to our IG_sentiment_nrc data frame
+IG_sentiment_nrc <- data.frame(IG_sentiment_nrc, event_index = factor(key_events, levels = c(1:8)), event_desc = key_label)
+
+event_nrc <- IG_sentiment_nrc %>% group_by(event_index, Politician, sentiment, event_desc) %>% summarise(count = n())
+
+# Find totals to break into proportions
+total_nrc <- event_nrc %>% group_by(Politician, event_index) %>% summarise(total = sum(count))
+
+# Now, create the proportion of emotional terms per period per politician
+event_nrc <- event_nrc %>% group_by(Politician, sentiment, event_index, event_desc) %>% inner_join(total_nrc) %>% mutate(proportion = round(count/total, 3))
+
+# Graphing: was there a change in emotions before and after coronavirus's introduction?
+
+# Note that we need to do each emotion on its own, otherwise its too much to look at
+i <- ggplot(event_nrc, aes(x = Politician, y = proportion, color = Politician, size = proportion)) + 
+  geom_point(alpha = .5, show.legend = FALSE) + 
+  facet_wrap(~sentiment) + coord_flip() + 
+  scale_size(range = c(.05, 7)) +
+  transition_states(event_desc, transition_length = 3, state_length = 1) +
+  ease_aes('linear') + 
+  labs(subtitle = "{closest_state}", title = "Feelings Behind the Captions of Politicians, by Month", y = "Proportion", x = "") +
+  theme(plot.subtitle = element_text(size = 15, face = "bold", hjust = .5), plot.title = element_text(hjust =.5))
+
+i <- animate(i, nframes = 90, fps = 5)
+
+anim_save("Event_nrc.gif")
+
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,135 @@
+---
+title: "Followers_BCR"
+author: "Tyler Wu"
+output: pdf_document
+---
+
+```{r,message=FALSE,warning=FALSE}
+library(gganimate)
+library(hrbrthemes)
+library(tidyverse)
+library(lubridate)
+library(zoo) # forward replacing NAs
+library(av) # rendering mp4
+```
+
+# 1) Read in data
+```{r,message=FALSE,warning=FALSE}
+all_data <- read_csv('poli_ig_followers.csv')
+head(all_data)
+key_dates <- read_csv('key_dates.csv')[2:3]
+key_dates <- key_dates[c(1,2,4,6,14,17,25),] # only keep very important ones
+key_dates
+```
+
+# 2) Format dataframes
+```{r}
+# format dates to datetime
+key_dates <- key_dates %>% rename(date = dates)
+key_dates$description <- str_remove(key_dates$description, '\n')
+key_dates$description <- str_remove(key_dates$description, 'LMAO')
+key_dates[nrow(key_dates) + 1,] = list('6/01/2019',"Coronavirus yet to occur") # add pre-virus label
+key_dates$date <- mdy(key_dates$date)
+key_dates$month <- format(key_dates$date, format="%Y-%m")
+key_dates
+```
+
+# 2a) Create columns for bar chart race
+```{r}
+# format dates to datetime
+all_data$date <- mdy(all_data$date)
+
+# create month label, and sum followers by month -> followers_m, followers_c_m
+all_data$month <- format(all_data$date, format="%Y-%m")
+all_data <- all_data %>% group_by(name,month) %>% mutate(followers_m = sum(followers),followers_c_m = sum(followers_change))
+
+# create ranking for each date
+anim <- all_data %>% group_by(date) %>% mutate(rank = min_rank(-followers),month_rank = min_rank(-followers_m)) %>% ungroup()
+
+# indicator for party, for coloring in plot
+anim$republican <- anim$name %in% c('realdonaldtrump','sentedcruz')
+
+# makes numbers easier to read
+anim$followers_1k <- round(anim$followers/1000)
+```
+
+```{r}
+# add month_label (do specific events lead to surge in followers?)
+anim <- left_join(anim,key_dates,by='month')
+
+# order dates
+anim <- anim[order(anim$month),]
+
+# remove unnecessary dates (earliest dates June 2019)
+anim <- anim[-(1:552),]
+
+# make description 'fill forward' for NA vals
+anim$description <- na.locf(anim$description,na.rm = FALSE)
+
+# then paste date and description together
+anim$month_label <- paste(anim$month,': ',anim$description)
+```
+```{r}
+# write.csv(anim,'followers_m.csv',row.names=FALSE)
+```
+
+# 3) Create static bar chart for bar chart race
+```{r}
+# now create static bar chart using rank
+p <- ggplot(anim,aes(month_rank)) + geom_tile(aes(y=followers_m / 2, height=followers_m,width=0.8,fill =republican),alpha=0.8,color=NA) + 
+  geom_text(aes(y=0, label = paste(name, " ")),size=5,vjust=-0.5,hjust=0) + 
+  geom_text(aes(y = followers_m, label = as.character(followers_m),hjust = 0)) + 
+  coord_flip(clip = 'off',expand = FALSE) + scale_y_continuous(labels = scales::comma) +
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) + 
+  scale_fill_manual(values=c('#4d5dd1','#e6575c'))
+p <- p + labs(p,x = "", y = "Total Followers",caption = "Source: Trackalytics") +
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+p
+```
+
+# 4) Animate barcharts with gganimate
+```{r}
+p <- p + transition_states(month_label,transition_length = 1,state_length = 3) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+p <- animate(p, duration = 20,
+             fps = 20, renderer = av_renderer()) # 30 * 20 -> 200 frames 
+```
+
+```{r}
+anim_save('poli_ig_followers(1).mp4',p)
+```
+
+```{r}
+# remove duplicates for month (only one name:month combination)
+anim <- anim[!(duplicated(anim$month) & duplicated(anim$followers_c_m)),]
+anim <- anim %>% group_by(month) %>% mutate(rank_c_m = row_number(-followers_c_m) * 1) %>% ungroup()
+```
+
+```{r}
+# do same for follwer_change
+q <- ggplot(anim,aes(rank_c_m)) + geom_tile(aes(y=followers_c_m / 2, height=followers_c_m,width=0.9,fill=republican),alpha=0.8,color=NA) + 
+  geom_text(aes(y=0, label = paste(name, " ")),size=5,vjust=-0.5,hjust=0) + 
+  geom_text(aes(y = followers_c_m, label = as.character(followers_c_m),hjust = 0)) + 
+  coord_flip(clip = 'off',expand = FALSE) + scale_y_continuous(labels = scales::comma) +
+  scale_x_reverse() +
+  guides(color = FALSE, fill = FALSE) + 
+  scale_fill_manual(values=c('#4d5dd1','#e6575c'))
+q <- q + labs(p,x = "", y = "Change in Followers (per Month)",caption = "Source: Trackalytics") +
+  theme(axis.ticks.y = element_blank(),axis.text.y = element_blank())
+q
+```
+
+```{r,warning=FALSE,message=FALSE}
+q <- q + transition_states(month_label,transition_length = 1,state_length = 3) +
+  labs(title = '{closest_state}') + ease_aes('cubic-in-out')
+
+q <- animate(q, duration = 20,
+             fps = 20, renderer = av_renderer())
+```
+
+
+```{r}
+anim_save('poli_ig_followers_change(1).mp4',q)
+```
+
