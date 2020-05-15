@@ -39,5 +39,5 @@ Also, to test our code, please ensure the [Datasets](https://github.com/tylerwu2
 * **Alena Abela** [Alena.abella@gmail.com](mailto:Alena.abella@gmail.com)
 * **Emma Broback** [ebroback@g.ucla.edu](mailto:ebroback@g.ucla.edu)
 * **Linus Jen** [linusscjen@g.ucla.edu](mailto:linusscjen@g.ucla.edu)
-* **Josh Kong** []()
+* **Josh Kong** [joshkong91@gmail.com](mailto:joshkong91@gmail.com)
 * **Tyler Wu** [tylerwu2222@g.ucla.edu](mailto:tylerwu2222@g.ucla.edu)
