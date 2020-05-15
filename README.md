@@ -16,8 +16,8 @@ Also, to test our code, please ensure the Datasets folder is in the same directo
 * [Afinn_Sentiments.R](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Afinn_Sentiments.R): used to create the afinn sentiment graphs (slides 23 to 25)
 * [Sentiment_Likes.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Sentiment_Likes.Rmd): used to create the scatter plot of sentiment vs engagement (slide 26)
 * [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 27 to 32)
-
 * [Final Graphs.zip](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Final%20Graphs.zip): zip folder containing the final graphs of our presentation
+* ([Bonus Graphs.zip](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bonus%20Graphs.zip): zip folder containing a few bonus graphs that didn't make the final cut.)
 
 ## Datasets
 * [politicians_ig.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/politicians_ig.csv): Our initial and primary dataset. Scraped from instagram, contains info for each politician like post url, datetime of post, caption, and top comments.
