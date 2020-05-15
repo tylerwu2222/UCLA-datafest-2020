@@ -4,19 +4,25 @@ Our team's project for the UCLA ASA Datafest 2020 Virtual Challenge. We decided 
 ## Prerequisites
 To run the RMD's please install the following packages using this line of code:
 ```
-install.pacakges(c('lubridate','zoo','av','gifsky','plotly','tidytext','stopwords','tidyverse','gganimate','hbrthemes','igraph','ggraph'))
+install.pacakges(c('lubridate','zoo','av','gifsky','plotly','tidytext','stopwords','tidyverse','gganimate','hbrthemes','igraph','ggraph','wordcloud'))
 ```
-Also, to test our code, please unsure the Datasets folder is in the same directory as the Rmd files since they make references to the datasets.
+Also, to test our code, please ensure the Datasets folder is in the same directory as the Rmd files since they make references to the datasets.
 
 ## Files
-* [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 26 to 31)
-* [Captions_Bigrams.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Bigrams.Rmd): used to create the animated bar chart for bigrams and the bigram network (slides 18 to 20)
-* [Captions_Comments_BCR.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Comments_BCR.Rmd): used to create the animated bar charts for captions (slides 16 & 17)
+* [Follower_Engagement.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Follower_Engagement.Rmd): used to create line charts showing follower engagement (slides 10 to 13)
 * [Followers_BCR.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Followers_BCR.Rmd): used to create the animated bar chart for change in followers (slide 14)
+* [Captions_Comments_BCR.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Comments_BCR.Rmd): used to create the animated bar charts for captions (slides 16 & 17)
+* [Captions_Bigrams.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Captions_Bigrams.Rmd): used to create the animated bar chart for bigrams and the bigram network (slides 18 to 20)
+* [Afinn_Sentiments.R](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Afinn_Sentiments.R): used to create the afinn sentiment graphs (slides 23 to 25)
+* [Sentiment_Likes.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Sentiment_Likes.Rmd): used to create the scatter plot of sentiment vs engagement (slide 26)
+* [Bing_NRC_Sentiments.Rmd](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Bing_NRC_Sentiments.Rmd): used to create the Bing and NRC sentiment animated and static graphs (slides 27 to 31)
+
+* [Final Graphs.zip](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Final%20Graphs.zip): zip folder containing the final graphs of our presentation
 
 ## Datasets
-* [politicians_ig.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/politicians_ig.csv): Our initial and primary dataset. Scraped from instagram, contains info like post url, datetime of post, caption, and top comments.
-* [key_dates.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/key_dates.csv): A datasets containing key dates in the Coronavirus timeline and a short excerpt on what happened on each date. Used for labeling in our animated graphs.
+* [politicians_ig.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/politicians_ig.csv): Our initial and primary dataset. Scraped from instagram, contains info for each politician like post url, datetime of post, caption, and top comments.
+* [followers.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/followers.csv): Contains daily follower count and change in followers for each politician.
+* [key_dates.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/key_dates.csv): Contains key dates in the Coronavirus timeline and a short excerpt on what happened on each date. Used for labeling in our animated graphs.
 
 ### Unused Datasets
 * [trump_tweets.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/trump_tweets.csv): We initially had the idea to scrape twitter data, however, directly scraping Twitter proved to difficult with our current skillset and the Twitter API only went back a month in tweets. Therefore, we opted to go with instagram data instead, but here are the datasets regardless.
@@ -27,4 +33,4 @@ Also, to test our code, please unsure the Datasets folder is in the same directo
 * **Emma Broback**
 * **Linus Jen**
 * **Josh Kong**
-* **Tyler Wu**
+* **Tyler Wu** [tylerwu2222@g.ucla.edu](tylerwu2222@g.ucla.edu)
