@@ -32,7 +32,7 @@ Also, to test our code, please ensure the [Datasets](https://github.com/tylerwu2
 * other datasets in the folder were working datasets used by individual members in their graph creation process.
 
 ### Unused Datasets
-* [trump_tweets.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/trump_tweets.csv): We initially had the idea to scrape twitter data, however, directly scraping Twitter proved to difficult with our current skillset and the Twitter API only went back a month in tweets. Therefore, we opted to go with instagram data instead, but here are the datasets regardless.
+* [trump_tweets.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/trump_tweets.csv): We initially had the idea to scrape twitter data, however, directly scraping Twitter proved to be too difficult with our current skillset and the Twitter API only went back a month in tweets. Therefore, we opted to go with Instagram data instead, but here are the datasets regardless.
 * [tweets_about_trump.csv](https://github.com/tylerwu2222/UCLA-datafest-2020/blob/master/Datasets/tweets_about_trump.csv) ^
 
 ## Authors
